@@ -28,7 +28,7 @@ Perfect for:
 
 ```yaml
       - name: Create PreviewCloud environment
-        uses: ahadalichowdhury/previewcloud-action@v1.0.0
+        uses: ahadalichowdhury/previewcloud-action@v1.0.1
         with:
           api_key: ${{ secrets.PREVIEWCLOUD_API_KEY }}
           pr_number: ${{ github.event.pull_request.number }}
