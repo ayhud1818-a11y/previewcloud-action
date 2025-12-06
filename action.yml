@@ -93,16 +93,19 @@ runs:
       id: create_preview
       shell: bash
       run: |
-        RESPONSE=$(curl -s --max-time 30 -w "\n%{http_code}" -X POST "${{ inputs.base_url }}/api/v1/previews" \
-          -H "Authorization: Bearer ${{ inputs.api_key }}" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"pr_number\": ${{ inputs.pr_number }},
-            \"branch\": \"${{ inputs.branch }}\",
-            \"commit_sha\": \"${{ inputs.commit_sha }}\",
-            \"repository\": \"${{ inputs.repository }}\",
-            \"preview_yaml\": ${{ steps.read_config.outputs.preview_yaml }}
-          }")
+        # Create JSON payload file (no line continuations - fixes curl error)
+        cat > /tmp/payload.json << PAYLOADEOF
+        {
+          "pr_number": ${{ inputs.pr_number }},
+          "branch": "${{ inputs.branch }}",
+          "commit_sha": "${{ inputs.commit_sha }}",
+          "repository": "${{ inputs.repository }}",
+          "preview_yaml": ${{ steps.read_config.outputs.preview_yaml }}
+        }
+        PAYLOADEOF
+
+        # Single-line curl command (no backslashes - fixes the error!)
+        RESPONSE=$(curl -s --max-time 30 -w "\n%{http_code}" -X POST "${{ inputs.base_url }}/api/v1/previews" -H "Authorization: Bearer ${{ inputs.api_key }}" -H "Content-Type: application/json" -d @/tmp/payload.json)
 
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         BODY=$(echo "$RESPONSE" | sed '$d')
@@ -127,8 +130,8 @@ runs:
         # Wait a bit for preview to be created
         sleep 2
 
-        RESPONSE=$(curl -s --max-time 30 -w "\n%{http_code}" -X GET "${{ inputs.base_url }}/api/v1/previews/${{ inputs.pr_number }}" \
-          -H "Authorization: Bearer ${{ inputs.api_key }}")
+        # Single-line curl command (no backslashes)
+        RESPONSE=$(curl -s --max-time 30 -w "\n%{http_code}" -X GET "${{ inputs.base_url }}/api/v1/previews/${{ inputs.pr_number }}" -H "Authorization: Bearer ${{ inputs.api_key }}")
 
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         BODY=$(echo "$RESPONSE" | sed '$d')
@@ -153,8 +156,8 @@ runs:
       if: ${{ inputs.action == 'destroy' }}
       shell: bash
       run: |
-        RESPONSE=$(curl -s --max-time 30 -w "\n%{http_code}" -X DELETE "${{ inputs.base_url }}/api/v1/previews/${{ inputs.pr_number }}" \
-          -H "Authorization: Bearer ${{ inputs.api_key }}")
+        # Single-line curl command (no backslashes)
+        RESPONSE=$(curl -s --max-time 30 -w "\n%{http_code}" -X DELETE "${{ inputs.base_url }}/api/v1/previews/${{ inputs.pr_number }}" -H "Authorization: Bearer ${{ inputs.api_key }}")
 
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         BODY=$(echo "$RESPONSE" | sed '$d')
